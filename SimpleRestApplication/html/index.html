@@ -1,0 +1,154 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Пользователи</h1>
+    <input type="text" id="tb-name" placeholder="Введите имя пользователя" required><br>
+    <input type="text" id="tb-age" placeholder="Введите возраст пользователя" style="width: 200px; margin: 20px 0;"><br>
+
+    <button id="addUser-btn">Добавить пользователя</button>
+
+    <h2>Список пользователей</h2>
+    <table id="users-table">
+        <tr>
+            <th>User ID</th>
+            <th style="padding: 0 50px;">User Name</th>
+            <th>User Age</th>
+        </tr>
+    </table>
+
+    <script>
+
+        getAllUsers();
+
+        document.getElementById("addUser-btn").addEventListener("click", addUser);
+      
+
+        async function getAllUsers(){
+            let response = await fetch("/getAllUsers", {
+
+                method: "GET",
+                headers: { "Accept": "application/json" },
+            });
+
+            if (response.ok == true) {
+
+                let userList = await response.json();
+
+                userList.forEach(user => rowUpdate(user));
+                            
+            }
+            else {
+                const err = await response.json();
+                alert(err.message);
+            }
+        }
+
+        async function addUser(){
+
+            let response = await fetch("/addUser",{
+
+                method: "POST",
+                headers: {"Accept": "application/json", "Content-Type": "application/json"},
+                body:JSON.stringify(
+                    {
+                        name: document.getElementById("tb-name").value,
+                        age: document.getElementById("tb-age").value,
+                    }
+                ),
+            });
+
+            if(response.ok == true){
+
+                let user = await response.json();
+                rowUpdate(user);
+                           
+            }
+            else{
+                const err = await response.json();
+                alert(err.message);
+            }
+        }
+
+        async function removeUser(userID) {
+
+            let response = await fetch(`/removeUser/${userID}`,
+                {
+                    method: "DELETE",
+                    
+                });
+
+            if (response.ok) {
+
+                document.querySelector(`[table-row-userid="${userID}"]`).remove();
+                
+
+            }
+            else {
+                const err = await response.json();
+                alert(err.message);
+            }
+
+
+        }
+
+        async function updateUser(userID, newName, newAge) {
+
+            let response = await fetch(`/updateUser/${userID}`, {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: newName,
+                    age: newAge,
+                }),
+
+            });
+
+            if (response.ok) {
+
+                let newUser = await response.json();
+                let tb = document.querySelector(`[table-row-userid="${userID}"]`);
+
+                tb.childNodes[1].innerHTML = newUser.name;
+                tb.childNodes[2].innerHTML = newUser.age;
+
+            }
+            else {
+                const err = await response.json();
+                alert(err.message);
+            }
+
+
+        }
+
+        function rowUpdate(user) {
+
+            let tr = document.createElement("tr");
+            tr.setAttribute("table-row-userid", user.id);
+
+            tr.appendChild(document.createElement("td")).innerHTML = user.id;
+            tr.appendChild(document.createElement("td")).innerHTML = user.name;
+            tr.appendChild(document.createElement("td")).innerHTML = user.age;
+
+            document.getElementById("users-table").appendChild(tr);
+
+            let updateButton = document.createElement("button");
+            let tbName = document.getElementById("tb-name");
+            let tbAge = document.getElementById("tb-age");
+            updateButton.addEventListener("click", async () => await updateUser(user.id, tbName.value, tbAge.value));
+
+            let deleteButton = document.createElement("button");
+            deleteButton.addEventListener("click", async () => await removeUser(user.id));
+
+            tr.appendChild(updateButton).textContent = "Изменить";
+            tr.appendChild(deleteButton).textContent = "Удалить";   
+        }
+
+    </script>
+</body>
+</html>
